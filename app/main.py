@@ -23,6 +23,7 @@ if settings.BACKEND_CORS_ORIGINS:
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
+
 def custom_openapi():
     if app.openapi_schema:
         return app.openapi_schema
@@ -40,6 +41,7 @@ def custom_openapi():
 
 
 app.openapi = custom_openapi
+
 
 @app.get("/")
 async def docs_redirect():

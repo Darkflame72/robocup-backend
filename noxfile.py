@@ -10,11 +10,13 @@ from nox_poetry import session
 
 
 package = "app"
-python_versions = ["3.9", "3.8", "3.7"]
+python_versions = ["3.8"]
 nox.options.sessions = (
     "pre-commit",
     "safety",
     "mypy",
+    # "tests"
+    # "coverage",
 )
 
 
@@ -100,10 +102,7 @@ def safety(session: Session) -> None:
     session.install("safety")
     # Ignore some issues in some dev dependencies
     session.run(
-        "safety",
-        "check",
-        f"--file={requirements}",
-        "--bare",
+        "safety", "check", f"--file={requirements}", "--bare",
     )
 
 
@@ -118,32 +117,29 @@ def mypy(session: Session) -> None:
         session.run("mypy", f"--python-executable={sys.executable}", "noxfile.py")
 
 
-# @session(python=python_versions)
-# def tests(session: Session) -> None:
-#     """Run the test suite."""
-#     session.install(".")
-#     session.install(
-#         "coverage[toml]", "pytest", "pygments", "pytest-asyncio"
-#     )
-#     try:
-#         session.run("coverage", "run", "--parallel", "-m", "pytest", *session.posargs)
-#     finally:
-#         if session.interactive:
-#             session.notify("coverage")
+@session(python=python_versions)
+def tests(session: Session) -> None:
+    """Run the test suite."""
+    session.install(".")
+    session.install("coverage[toml]", "pytest", "pygments", "pytest-asyncio")
+    try:
+        session.run("coverage", "run", "--parallel", "-m", "pytest", *session.posargs)
+    finally:
+        if session.interactive:
+            session.notify("coverage")
 
 
-# @session
-# def coverage(session: Session) -> None:
-#     """Produce the coverage report."""
-#     # Do not use session.posargs unless this is the only session.
-#     nsessions = len(session._runner.manifest)  # type: ignore[attr-defined]
-#     has_args = session.posargs and nsessions == 1
-#     args = session.posargs if has_args else ["report"]
+@session
+def coverage(session: Session) -> None:
+    """Produce the coverage report."""
+    # Do not use session.posargs unless this is the only session.
+    nsessions = len(session._runner.manifest)  # type: ignore[attr-defined]
+    has_args = session.posargs and nsessions == 1
+    args = session.posargs if has_args else ["report"]
 
-#     session.install("coverage[toml]")
+    session.install("coverage[toml]")
 
-#     if not has_args and any(Path().glob(".coverage.*")):
-#         session.run("coverage", "combine")
+    if not has_args and any(Path().glob(".coverage.*")):
+        session.run("coverage", "combine")
 
-#     session.run("coverage", *args)
-
+    session.run("coverage", *args)
