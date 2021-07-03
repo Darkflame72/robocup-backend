@@ -30,7 +30,7 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
         db.commit()
         for member in obj_in.team_members:
             mem_obj = TeamMember(
-                uuid=member.uuid, uuid_team=db_obj.uuid, role=member.role
+                uuid=uuid4(),uuid_user=member.uuid, uuid_team=db_obj.uuid, role=member.role
             )
             db.add(mem_obj)
             db.commit()

@@ -8,6 +8,7 @@ from pydantic.types import UUID4
 # Shared properties
 class TeamMemberBase(BaseModel):
     uuid: UUID4
+    uuid_user: UUID4
     role: str
 
 

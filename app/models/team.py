@@ -24,6 +24,7 @@ class Team(Base):
 
 class TeamMember(Base):
     uuid = Column(UUID(as_uuid=True), nullable=False, primary_key=True)
+    uuid_user = Column(UUID(as_uuid=True), nullable=False)
     uuid_team = Column(UUID(as_uuid=True), nullable=False)
     role = Column(String(length=10), nullable=True)
     # Column("competition", UUID(as_uuid=True), nullable=False),

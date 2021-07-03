@@ -82,11 +82,12 @@ def upgrade():
     op.create_table(
         "team_member",
         sa.Column("uuid", UUID(as_uuid=True), nullable=False,),
+        sa.Column("uuid_user", UUID(as_uuid=True), nullable=False,),
         sa.Column("uuid_team", UUID(as_uuid=True), nullable=False),
         sa.Column("role", sa.String(length=10), nullable=True),
         # sa.Column("competition", UUID(as_uuid=True), nullable=False),
         sa.PrimaryKeyConstraint("uuid"),
-        sa.ForeignKeyConstraint(["uuid"], ["user.uuid"]),
+        sa.ForeignKeyConstraint(["uuid_user"], ["user.uuid"]),
         sa.ForeignKeyConstraint(["uuid_team"], ["team.uuid"]),
     )
 
@@ -320,23 +321,25 @@ def upgrade():
 
 
 def downgrade():
-    op.drop_table("user")
-    op.drop_table("competition")
-    op.drop_table("team")
-    op.drop_table("team_member")
-    op.drop_table("award_types")
-    op.drop_table("awards")
-    op.drop_table("onstage_interview")
-    op.drop_table("onstage_performance")
-    op.drop_table("onstage_scoresheet_categories")
-    op.drop_table("onstage_scoresheet_criteria")
-    op.drop_table("onstage_scoresheet_descriptors")
-    op.drop_table("onstage_round")
-    op.drop_table("rescue_course_setups")
-    op.drop_table("rescue_result")
-    op.drop_table("rescue_result_tile")
-    op.drop_table("rescue_round")
-    op.drop_table("rescue_round_type")
-    op.drop_table("rescue_tile")
-    op.drop_table("rescue_tile_tag")
     op.drop_table("rescue_tile_round")
+    op.drop_table("rescue_tile_tag")
+    op.drop_table("rescue_tile")
+    op.drop_table("rescue_round_type")
+    op.drop_table("rescue_round")
+    op.drop_table("rescue_result_tile")
+    op.drop_table("rescue_result")
+    op.drop_table("rescue_course_setups")
+    op.drop_table("onstage_scoresheet_descriptors")
+    op.drop_table("onstage_scoresheet_criteria")
+    op.drop_table("onstage_scoresheet_categories")
+    op.drop_table("onstage_performance")
+    op.drop_table("onstage_round_typr")
+    op.drop_table("onstage_interview")
+    op.drop_table("onstage_round")
+    op.drop_table("awards")
+    op.drop_table("award_types")
+    op.drop_table("team_member")
+    op.drop_table("team")
+    op.drop_table("competition")
+    op.drop_table("user")
+
