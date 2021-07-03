@@ -38,7 +38,7 @@ def create_user(
     *,
     db: Session = Depends(deps.get_db),
     user_in: schemas.UserCreate,
-    # current_user: models.User = Depends(deps.get_current_active_superuser),
+    current_user: models.User = Depends(deps.get_current_active_superuser),
 ) -> Any:
     """
     Create new user.
@@ -98,11 +98,10 @@ def create_user_open(
     db: Session = Depends(deps.get_db),
     password: str = Body(...),
     email: EmailStr = Body(...),
-    full_name: str = Body(None),
-    current_user: models.User = Depends(deps.get_current_active_superuser),
+    full_name: str = Body(...),
 ) -> Any:
     """
-    Create new user.
+    Register new user.
     """
     user = crud.user.get_by_email(db, email=email)
     if user:

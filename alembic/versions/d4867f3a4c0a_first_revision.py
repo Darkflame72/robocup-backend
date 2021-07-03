@@ -71,7 +71,7 @@ def upgrade():
         #     nullable=False,
         # ),
         sa.Column("uuid_mentor", UUID(as_uuid=True), nullable=True),
-        sa.Column("uuid_competition", UUID(as_uuid=True), nullable=True),
+        sa.Column("uuid_competition", UUID(as_uuid=True), nullable=False),
         sa.Column("hardware_type", sa.String(64), nullable=False),
         sa.Column("software_type", sa.String(100), nullable=False),
         sa.PrimaryKeyConstraint("uuid"),

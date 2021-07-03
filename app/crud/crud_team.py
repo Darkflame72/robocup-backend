@@ -20,33 +20,34 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
             uuid=uuid4(),
             name=obj_in.name,
             organisation=obj_in.organisation,
-            num_member=obj_in.num_member,
+            num_member=len(obj_in.team_members),
             uuid_mentor=obj_in.uuid_mentor,
             hardware_type=obj_in.hardware_type,
             software_type=obj_in.software_type,
+            uuid_competition=obj_in.uuid_competition,
         )
         db.add(db_obj)
         db.commit()
+        for member in obj_in.team_members:
+            mem_obj = TeamMember(
+                uuid=member.uuid, uuid_team=db_obj.uuid, role=member.role
+            )
+            db.add(mem_obj)
+            db.commit()
         db.refresh(db_obj)
         return db_obj
 
     def get_team_members(self, db: Session, uuid: UUID4) -> List[TeamMember]:
-        return db.query(TeamMember).filter(TeamMember.uuid == uuid).all()
+        return db.query(TeamMember).filter(TeamMember.uuid_team == uuid).all()
 
-    # def update(
-    #     self, db: Session, *, db_obj: Team, obj_in: Union[TeamUpdate, Dict[str, Any]]
-    # ) -> Team:
-    #     if isinstance(obj_in, dict):
-    #         update_data = obj_in
-    #     else:
-    #         update_data = obj_in.dict(exclude_unset=True)
-    #     if "password" in update_data:
-    #         hashed_password = get_password_hash(update_data["password"])
-    #         del update_data["password"]
-    #         update_data["hashed_password"] = hashed_password
-    #     return super().update(db, db_obj=db_obj, obj_in=update_data)
-
-    # def members(self, db:Session, team:UUID) -> Team:
+    def update(
+        self, db: Session, *, db_obj: Team, obj_in: Union[TeamUpdate, Dict[str, Any]]
+    ) -> Team:
+        if isinstance(obj_in, dict):
+            update_data = obj_in
+        else:
+            update_data = obj_in.dict(exclude_unset=True)
+        return super().update(db, db_obj=db_obj, obj_in=update_data)
 
 
 team = CRUDTeam(Team)

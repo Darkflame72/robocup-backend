@@ -19,6 +19,7 @@ class Team(Base):
     uuid_mentor = Column(UUID(as_uuid=True), nullable=False)
     hardware_type = Column(String(64), nullable=False)
     software_type = Column(String(100), nullable=False)
+    uuid_competition = Column(UUID(as_uuid=True), nullable=False)
 
 
 class TeamMember(Base):

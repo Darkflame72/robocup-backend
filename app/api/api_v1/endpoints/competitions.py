@@ -82,12 +82,12 @@ def update_competition(
     return competition
 
 
-@router.get("/members/{competition_uuid}")
-def get_competition_members(
+@router.get("/teams/{competition_uuid}")
+def get_competition_teams(
     *,
     db: Session = Depends(deps.get_db),
     competition_uuid: UUID4,
     current_user: models.User = Depends(deps.get_current_active_superuser),
 ) -> Any:
-    members = crud.competition.get_competition_members(db, uuid=competition_uuid)
+    members = crud.competition.get_competition_teams(db, uuid=competition_uuid)
     return members

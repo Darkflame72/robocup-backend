@@ -6,6 +6,7 @@ from .competition import CompetitionInDBBase
 from .competition import CompetitionUpdate
 from .msg import Msg
 from .team import Team
+from .team import TeamApi
 from .team import TeamBase
 from .team import TeamCreate
 from .team import TeamInDB
