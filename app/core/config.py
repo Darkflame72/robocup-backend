@@ -57,7 +57,8 @@ class Settings(BaseSettings):
         if isinstance(v, str):
             return v
         if values.get("DATABASE_URL") is not None:
-            return values.get("DATABASE_URL")
+            print("+asyncpg".join(values.get("DATABASE_URL").split(":"))
+            return "+asyncpg".join(values.get("DATABASE_URL").split(":"))
         return AsyncPostgresDsn.build(
             scheme="postgresql+asyncpg",
             user=values.get("POSTGRES_USER"),
