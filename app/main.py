@@ -50,7 +50,7 @@ app.openapi = custom_openapi
 
 @app.get("/")
 async def docs_redirect() -> RedirectResponse:
-    """Redirect base request to docs."""
+    """Redirect home request to docs."""
     response = RedirectResponse(url="/docs")
     return response
 
