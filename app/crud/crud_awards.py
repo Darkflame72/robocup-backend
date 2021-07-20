@@ -9,16 +9,16 @@ from sqlalchemy.future import select
 
 
 from app.crud.base import CRUDBase
-from app.models.team import Team
-from app.models.team import TeamMember
-from app.schemas.team import TeamCreate
-from app.schemas.team import TeamUpdate
+from app.models.awards import Awards
+from app.models.awards import AwardsMember
+from app.schemas.awards import AwardsCreate
+from app.schemas.awards import AwardsUpdate
 from pydantic.types import UUID4
 
 
-class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
-    async def create(self, db: AsyncSession, *, obj_in: TeamCreate) -> Team:
-        db_obj = Team(
+class CRUDAwards(CRUDBase[Awards, AwardsCreate, AwardsUpdate]):
+    async def create(self, db: AsyncSession, *, obj_in: AwardsCreate) -> Awards:
+        db_obj = Awards(
             uuid=uuid4(),
             name=obj_in.name,
             organisation=obj_in.organisation,
@@ -31,7 +31,7 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
         await db.add(db_obj)
         await db.commit()
         for member in obj_in.team_members:
-            mem_obj = TeamMember(
+            mem_obj = AwardsMember(
                 uuid=uuid4(),
                 uuid_user=member.uuid,
                 uuid_team=db_obj.uuid,
@@ -42,25 +42,15 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
         db.refresh(db_obj)
         return db_obj
 
-    async def get_team_members(self, db: AsyncSession, uuid: UUID4) -> List[TeamMember]:
-        result = await db.execute(select(TeamMember).filter(TeamMember.uuid_team == uuid))
-        return result.scalars().all()
-
     async def update(
-        self, db: AsyncSession, *, db_obj: Team, obj_in: Union[TeamUpdate, Dict[str, Any]]
-    ) -> Team:
+        self, db: AsyncSession, *, db_obj: Awards, obj_in: Union[AwardsUpdate, Dict[str, Any]]
+    ) -> Awards:
         if isinstance(obj_in, dict):
             update_data = obj_in
         else:
             update_data = obj_in.dict(exclude_unset=True)
         return await super().update(db, db_obj=db_obj, obj_in=update_data)
 
-    async def get_by_user(self, db: AsyncSession, uuid: UUID4) -> List[Team]:
-        team_members: List[TeamMember] = await db.execute(select(TeamMember).filter(TeamMember.uuid_team == uuid))
-        teams = []
-        for team in team_members:
-            teams.append(await db.execute(select(Team).filter(Team.uuid == team.uuid_team)))
-        return teams.scalars().all()
 
 
-team = CRUDTeam(Team)
+team = CRUDAwards(Awards)

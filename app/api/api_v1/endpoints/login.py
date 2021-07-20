@@ -1,40 +1,39 @@
 from datetime import timedelta
 from typing import Any
 
-from app import crud
-from app import models
-from app import schemas
+from fastapi import APIRouter, Body, Depends, HTTPException
+from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app import crud, models, schemas
 from app.api import deps
 from app.core import security
 from app.core.config import settings
 from app.core.security import get_password_hash
-from app.utils import generate_password_reset_token
-from app.utils import send_reset_password_email
-from app.utils import verify_password_reset_token
-from fastapi import APIRouter
-from fastapi import Body
-from fastapi import Depends
-from fastapi import HTTPException
-from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.orm import Session
+from app.utils import (
+    generate_password_reset_token,
+    send_reset_password_email,
+    verify_password_reset_token,
+)
 
 router = APIRouter()
 
 
 @router.post("/login/access-token", response_model=schemas.Token)
-def login_access_token(
-    db: Session = Depends(deps.get_db), form_data: OAuth2PasswordRequestForm = Depends()
+async def login_access_token(
+    db: AsyncSession = Depends(deps.get_db),
+    form_data: OAuth2PasswordRequestForm = Depends(),
 ) -> Any:
     """
     OAuth2 compatible token login, get an access token for future requests
     """
-    user = crud.user.authenticate(
+    user = await crud.user.authenticate(
         db, email=form_data.username, password=form_data.password
     )
     if not user:
         raise HTTPException(status_code=400, detail="Incorrect email or password")
-    # elif not crud.user.is_active(user):
-    #     raise HTTPException(status_code=400, detail="Inactive user")
+    elif not crud.user.is_active(user):
+        raise HTTPException(status_code=400, detail="Inactive user")
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     return {
         "access_token": security.create_access_token(
@@ -45,7 +44,7 @@ def login_access_token(
 
 
 @router.post("/login/test-token", response_model=schemas.User)
-def test_token(current_user: models.User = Depends(deps.get_current_user)) -> Any:
+async def test_token(current_user: models.User = Depends(deps.get_current_user)) -> Any:
     """
     Test access token
     """
@@ -53,11 +52,11 @@ def test_token(current_user: models.User = Depends(deps.get_current_user)) -> An
 
 
 @router.post("/password-recovery/{email}", response_model=schemas.Msg)
-def recover_password(email: str, db: Session = Depends(deps.get_db)) -> Any:
+async def recover_password(email: str, db: AsyncSession = Depends(deps.get_db)) -> Any:
     """
     Password Recovery
     """
-    user = crud.user.get_by_email(db, email=email)
+    user = await crud.user.get_by_email(db, email=email)
 
     if not user:
         raise HTTPException(
@@ -72,10 +71,10 @@ def recover_password(email: str, db: Session = Depends(deps.get_db)) -> Any:
 
 
 @router.post("/reset-password/", response_model=schemas.Msg)
-def reset_password(
+async def reset_password(
     token: str = Body(...),
     new_password: str = Body(...),
-    db: Session = Depends(deps.get_db),
+    db: AsyncSession = Depends(deps.get_db),
 ) -> Any:
     """
     Reset password
@@ -83,7 +82,7 @@ def reset_password(
     email = verify_password_reset_token(token)
     if not email:
         raise HTTPException(status_code=400, detail="Invalid token")
-    user = crud.user.get_by_email(db, email=email)
+    user = await crud.user.get_by_email(db, email=email)
     if not user:
         raise HTTPException(
             status_code=404,
@@ -94,5 +93,5 @@ def reset_password(
     hashed_password = get_password_hash(new_password)
     user.hashed_password = hashed_password
     db.add(user)
-    db.commit()
+    await db.commit()
     return {"msg": "Password updated successfully"}

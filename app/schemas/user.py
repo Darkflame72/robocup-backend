@@ -9,7 +9,8 @@ class UserBase(BaseModel):
     email: EmailStr
     is_superuser: bool = False
     full_name: str
-    phone_number: Optional[int] = None
+    is_active: bool = True
+    phone_number: Optional[str] = None
 
 
 # Properties to receive via API on creation

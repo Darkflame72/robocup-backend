@@ -5,15 +5,11 @@ Revises:
 Create Date: 2019-04-17 13:53:32.978401
 
 """
-import uuid
-
 import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql.expression import text
 from sqlalchemy.sql.functions import func
-from sqlalchemy.sql.operators import as_
-from sqlalchemy.sql.sqltypes import DateTime
 
 
 # revision identifiers, used by Alembic.
@@ -33,9 +29,10 @@ def upgrade():
         sa.Column("uuid", UUID(as_uuid=True), nullable=False,),
         sa.Column("hashed_password", sa.String(), nullable=False),
         sa.Column("email", sa.String(60), nullable=False),
+        sa.Column("is_active", sa.Boolean(), server_default=text("True")),
         sa.Column("full_name", sa.String(length=60), nullable=False),
-        sa.Column("phone_number", sa.Integer, nullable=True),
-        sa.Column("is_superuser", sa.Boolean, server_default=text("False")),
+        # sa.Column("phone_number", sa.String(14), nullable=True),
+        sa.Column("is_superuser", sa.Boolean(), server_default=text("False")),
         sa.PrimaryKeyConstraint("uuid"),
     )
 
@@ -53,23 +50,10 @@ def upgrade():
         sa.Column("uuid", UUID(as_uuid=True), nullable=False,),
         sa.Column("name", sa.String(60), nullable=False),
         sa.Column("organisation", sa.String(60),),
-        # sa.Column("registered_division", sa.String(100), nullable=False),
-        # sa.Column("uuid_challenge_division", sa.String(13), server_default=text("NULL")),
+        sa.Column("registered_division", sa.String(100), nullable=False),
         sa.Column("num_member", sa.Integer, server_default=text("2")),
         sa.Column("team_present", sa.Integer, server_default=text("0")),
-        # sa.Column(
-        #     "uuid_challenge_division",
-        #     sa.String,
-        #     server_default=text("Not Complete"),
-        #     nullable=False,
-        # ),
         sa.Column("interview_comments", sa.Text),
-        # sa.Column(
-        #     "interview_status",
-        #     sa.String(length=50),
-        #     server_default=text("Not Complete"),
-        #     nullable=False,
-        # ),
         sa.Column("uuid_mentor", UUID(as_uuid=True), nullable=True),
         sa.Column("uuid_competition", UUID(as_uuid=True), nullable=False),
         sa.Column("hardware_type", sa.String(64), nullable=False),
@@ -85,7 +69,6 @@ def upgrade():
         sa.Column("uuid_user", UUID(as_uuid=True), nullable=False,),
         sa.Column("uuid_team", UUID(as_uuid=True), nullable=False),
         sa.Column("role", sa.String(length=10), nullable=True),
-        # sa.Column("competition", UUID(as_uuid=True), nullable=False),
         sa.PrimaryKeyConstraint("uuid"),
         sa.ForeignKeyConstraint(["uuid_user"], ["user.uuid"]),
         sa.ForeignKeyConstraint(["uuid_team"], ["team.uuid"]),
@@ -254,7 +237,7 @@ def upgrade():
         ),
         sa.Column("referee", UUID(as_uuid=True), nullable=False),
         sa.Column("approval_type", sa.Integer(), nullable=True),
-        sa.Column("dnc", sa.Integer(), nullable=False),
+        sa.Column("dnc", sa.Boolean(), nullable=False),
         sa.Column("comment", sa.String(1000), nullable=True),
         sa.Column("status", sa.String(50), nullable=False),
         sa.PrimaryKeyConstraint("uuid"),
@@ -342,4 +325,3 @@ def downgrade():
     op.drop_table("team")
     op.drop_table("competition")
     op.drop_table("user")
-

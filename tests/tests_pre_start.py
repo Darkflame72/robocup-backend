@@ -1,6 +1,7 @@
 import logging
+import asyncio
 
-from app.db.session import SessionLocal
+from app.db.session import async_session
 from tenacity import after_log
 from tenacity import before_log
 from tenacity import retry
@@ -20,11 +21,11 @@ wait_seconds = 1
     before=before_log(logger, logging.INFO),
     after=after_log(logger, logging.WARN),
 )
-def init() -> None:
+async def init() -> None:
     try:
-        # Try to create session to check if DB is awake
-        db = SessionLocal()
-        db.execute("SELECT 1")
+        async with async_session() as db:
+            # Try to create a session to check if the DB is awake
+            await db.execute("SELECT 1")
     except Exception as e:
         logger.error(e)
         raise e
@@ -32,7 +33,7 @@ def init() -> None:
 
 def main() -> None:
     logger.info("Initializing service")
-    init()
+    asyncio.run(init())
     logger.info("Service finished initializing")
 
 

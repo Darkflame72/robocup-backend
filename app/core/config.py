@@ -1,16 +1,12 @@
 import secrets
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Union
+from typing import Any, Dict, List, Optional, Union
 
-from pydantic import AnyHttpUrl
-from pydantic import BaseSettings
-from pydantic import EmailStr
-from pydantic import HttpUrl
-from pydantic import PostgresDsn
-from pydantic import validator
+from pydantic import AnyHttpUrl, BaseSettings, EmailStr, HttpUrl, PostgresDsn, validator
+from pydantic.networks import RedisDsn
+
+
+class AsyncPostgresDsn(PostgresDsn):
+    allowed_schemes = {"postgres+asyncpg", "postgresql+asyncpg"}
 
 
 class Settings(BaseSettings):
@@ -20,6 +16,9 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
     SERVER_NAME: str
     SERVER_HOST: AnyHttpUrl
+    # BACKEND_CORS_ORIGINS is a JSON-formatted list of origins
+    # e.g: '["http://localhost", "http://localhost:4200", "http://localhost:3000", \
+    # "http://localhost:8080", "http://local.dockertoolbox.tiangolo.com"]'
     BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
 
     @validator("BACKEND_CORS_ORIGINS", pre=True)
@@ -43,19 +42,31 @@ class Settings(BaseSettings):
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
     POSTGRES_DB: str
-    SQLALCHEMY_DATABASE_URI: Optional[PostgresDsn] = None
+
+    DATABASE_URL: Optional[PostgresDsn] = None
+
+    @validator("DATABASE_URL", pre=True)
+    def validate_db_url(cls, v) -> Union[HttpUrl, None]:  # noqa: B902,N805
+        if v == "":
+            return None
+        return v
+    SQLALCHEMY_DATABASE_URI: Optional[AsyncPostgresDsn] = None
 
     @validator("SQLALCHEMY_DATABASE_URI", pre=True)
     def assemble_db_connection(cls, v: Optional[str], values: Dict[str, Any]) -> Any:
         if isinstance(v, str):
             return v
-        return PostgresDsn.build(
-            scheme="postgresql",
+        if values.get("DATABASE_URL") is not None:
+            return values.get("DATABASE_URL")
+        return AsyncPostgresDsn.build(
+            scheme="postgresql+asyncpg",
             user=values.get("POSTGRES_USER"),
             password=values.get("POSTGRES_PASSWORD"),
             host=values.get("POSTGRES_SERVER"),
             path=f"/{values.get('POSTGRES_DB') or ''}",
         )
+
+    REDIS_URL: RedisDsn
 
     SMTP_TLS: bool = True
     SMTP_PORT: Optional[int] = None

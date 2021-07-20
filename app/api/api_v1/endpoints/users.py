@@ -1,27 +1,23 @@
-from typing import Any
-from typing import List
+from app.schemas.team import TeamInDB
+from typing import Any, List
 
-from app import crud
-from app import models
-from app import schemas
-from app.api import deps
-from app.core.config import settings
-from app.utils import send_new_account_email
-from fastapi import APIRouter
-from fastapi import Body
-from fastapi import Depends
-from fastapi import HTTPException
+from fastapi import APIRouter, Body, Depends, HTTPException
 from fastapi.encoders import jsonable_encoder
 from pydantic.networks import EmailStr
 from pydantic.types import UUID4
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app import crud, models, schemas
+from app.api import deps
+from app.core.config import settings
+from app.utils import send_new_account_email
 
 router = APIRouter()
 
 
 @router.get("/", response_model=List[schemas.User])
-def read_users(
-    db: Session = Depends(deps.get_db),
+async def read_users(
+    db: AsyncSession = Depends(deps.get_db),
     skip: int = 0,
     limit: int = 100,
     current_user: models.User = Depends(deps.get_current_active_superuser),
@@ -29,27 +25,27 @@ def read_users(
     """
     Retrieve users.
     """
-    users = crud.user.get_multi(db, skip=skip, limit=limit)
+    users = await crud.user.get_multi(db, skip=skip, limit=limit)
     return users
 
 
 @router.post("/", response_model=schemas.User)
-def create_user(
+async def create_user(
     *,
-    db: Session = Depends(deps.get_db),
+    db: AsyncSession = Depends(deps.get_db),
     user_in: schemas.UserCreate,
     current_user: models.User = Depends(deps.get_current_active_superuser),
 ) -> Any:
     """
     Create new user.
     """
-    user = crud.user.get_by_email(db, email=user_in.email)
+    user = await crud.user.get_by_email(db, email=user_in.email)
     if user:
         raise HTTPException(
             status_code=400,
             detail="The user with this username already exists in the system.",
         )
-    user = crud.user.create(db, obj_in=user_in)
+    user = await crud.user.create(db, obj_in=user_in)
     if settings.EMAILS_ENABLED and user_in.email:
         send_new_account_email(
             email_to=user_in.email, username=user_in.email, password=user_in.password
@@ -58,12 +54,13 @@ def create_user(
 
 
 @router.put("/me", response_model=schemas.User)
-def update_user_me(
+async def update_user_me(
     *,
-    db: Session = Depends(deps.get_db),
+    db: AsyncSession = Depends(deps.get_db),
     password: str = Body(None),
     full_name: str = Body(None),
     email: EmailStr = Body(None),
+    phone_number: str = Body(None),
     current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
@@ -77,13 +74,15 @@ def update_user_me(
         user_in.full_name = full_name
     if email is not None:
         user_in.email = email
-    user = crud.user.update(db, db_obj=current_user, obj_in=user_in)
+    if phone_number is not None:
+        user_in.phone_number = phone_number
+    user = await crud.user.update(db, db_obj=current_user, obj_in=user_in)
     return user
 
 
 @router.get("/me", response_model=schemas.User)
-def read_user_me(
-    db: Session = Depends(deps.get_db),
+async def read_user_me(
+    db: AsyncSession = Depends(deps.get_db),
     current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
@@ -93,37 +92,42 @@ def read_user_me(
 
 
 @router.post("/open", response_model=schemas.User)
-def create_user_open(
+async def create_user_open(
     *,
-    db: Session = Depends(deps.get_db),
+    db: AsyncSession = Depends(deps.get_db),
     password: str = Body(...),
     email: EmailStr = Body(...),
-    full_name: str = Body(...),
+    full_name: str = Body(None),
 ) -> Any:
     """
-    Register new user.
+    Create new user without the need to be logged in.
     """
-    user = crud.user.get_by_email(db, email=email)
+    if not settings.USERS_OPEN_REGISTRATION:
+        raise HTTPException(
+            status_code=403,
+            detail="Open user registration is forbidden on this server",
+        )
+    user = await crud.user.get_by_email(db, email=email)
     if user:
         raise HTTPException(
             status_code=400,
             detail="The user with this username already exists in the system",
         )
     user_in = schemas.UserCreate(password=password, email=email, full_name=full_name)
-    user = crud.user.create(db, obj_in=user_in)
+    user = await crud.user.create(db, obj_in=user_in)
     return user
 
 
 @router.get("/{user_uuid}", response_model=schemas.User)
-def read_user_by_uuid(
+async def read_user_by_id(
     user_uuid: UUID4,
     current_user: models.User = Depends(deps.get_current_active_user),
-    db: Session = Depends(deps.get_db),
+    db: AsyncSession = Depends(deps.get_db),
 ) -> Any:
     """
-    Get a specific user by uuid.
+    Get a specific user by id.
     """
-    user = crud.user.get(db, uuid=user_uuid)
+    user = await crud.user.get(db, id=user_uuid)
     if user == current_user:
         return user
     if not crud.user.is_superuser(current_user):
@@ -134,9 +138,9 @@ def read_user_by_uuid(
 
 
 @router.put("/{user_uuid}", response_model=schemas.User)
-def update_user(
+async def update_user(
     *,
-    db: Session = Depends(deps.get_db),
+    db: AsyncSession = Depends(deps.get_db),
     user_uuid: UUID4,
     user_in: schemas.UserUpdate,
     current_user: models.User = Depends(deps.get_current_active_superuser),
@@ -144,11 +148,41 @@ def update_user(
     """
     Update a user.
     """
-    user = crud.user.get(db, uuid=user_uuid)
+    user = await crud.user.get(db, id=user_uuid)
     if not user:
         raise HTTPException(
             status_code=404,
             detail="The user with this username does not exist in the system",
         )
-    user = crud.user.update(db, db_obj=user, obj_in=user_in)
+    user = await crud.user.update(db, db_obj=user, obj_in=user_in)
     return user
+
+@router.delete("/{user_uuid}")
+async def delete_user(
+    *,
+    db: AsyncSession = Depends(deps.get_db),
+    user_uuid: UUID4,
+    current_user: models.User = Depends(deps.get_current_active_superuser),
+) -> Any:
+    """
+    Delete a user.
+    """
+    user = await crud.user.get(db, id=user_uuid)
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="The user with this username does not exist in the system",
+        )
+    await crud.user.remove(uuid=user_uuid)
+    return
+
+@router.get("/teams/{team_uuid}", response_model=List[TeamInDB])
+async def get_teams(
+    *,
+    db: AsyncSession = Depends(deps.get_db),
+    uuid: UUID4,
+    current_user: models.User = Depends(deps.get_current_active_superuser),
+) -> Any:
+    """Get Team by user"""
+    members = await crud.team.get_by_user(db, uuid=uuid)
+    return members

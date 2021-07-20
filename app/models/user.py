@@ -3,7 +3,6 @@ import uuid
 from app.db.base_class import Base
 from sqlalchemy import Boolean
 from sqlalchemy import Column
-from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy.dialects.postgresql import UUID
 
@@ -13,5 +12,6 @@ class User(Base):
     full_name = Column(String(60), nullable=False)
     email = Column(String(60), nullable=False)
     hashed_password = Column(String(), nullable=False)
-    phone_number = Column(Integer(), nullable=True)
-    is_superuser = Column(Boolean, default=False)
+    phone_number = Column(String(14), nullable=True)
+    is_superuser = Column(Boolean(), default=False)
+    is_active = Column(Boolean(), default=True)
