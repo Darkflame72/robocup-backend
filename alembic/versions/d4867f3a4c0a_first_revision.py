@@ -31,7 +31,7 @@ def upgrade():
         sa.Column("email", sa.String(60), nullable=False),
         sa.Column("is_active", sa.Boolean(), server_default=text("True")),
         sa.Column("full_name", sa.String(length=60), nullable=False),
-        # sa.Column("phone_number", sa.String(14), nullable=True),
+        sa.Column("phone_number", sa.String(14), nullable=True),
         sa.Column("is_superuser", sa.Boolean(), server_default=text("False")),
         sa.PrimaryKeyConstraint("uuid"),
     )
